@@ -6,7 +6,7 @@
 namespace rb3202
 {
 //private:
-void DC_motor::PIDProces()
+void DC_motor::PIDProces(void *)
 {
     const TickType_t x_delay = COUNT_PID_PERIOD / portTICK_PERIOD_MS;
     RB3202_encoder encoder (pid_data.enc_pin[0], pid_data.enc_pin[1]);
@@ -50,7 +50,7 @@ float DC_motor::count_I()
     float I_membr = 0;
     for(int a = 1000/COUNT_PID_PERIOD; a > 0;a--)
     {
-        //pid_data.I_memori[a] += pid_data.I_memori[a--];
+        pid_data.I_memori[a] += pid_data.I_memori[a-1];
     }
     pid_data.I_memori[0] = pid_data.en;
     for(int a = 0; a < 1000/COUNT_PID_PERIOD;a++)
@@ -65,7 +65,7 @@ float DC_motor::count_D()
     return (pid_data.en - pid_data.I_memori[1])*pid_data.D;
 }
 
-void DC_motor::rotateWirtualWheel()
+void DC_motor::rotateWirtualWheel(void *)
 {
     const TickType_t x_delay = COUNT_PID_PERIOD / portTICK_PERIOD_MS;
     while (true)
@@ -98,13 +98,12 @@ void DC_motor::sedPID(int motor)
 {
     pid_data.motor = motor;
     choicePins();
-    DRV8833 drv;
     setDriver();
     TaskHandle_t xHandle = NULL;
     static uint8_t taskParam;
     DC_motor start;
-    //xTaskCreate( start.PIDProces , "PID", 10, &taskParam, 1, &xHandle);
-    //xTaskCreate( start.rotateWirtualWheel , "rotateWirWheel", 10, &taskParam, 1, &xHandle);
+    xTaskCreate(start.PIDProces , "PID", 10, &taskParam, 1, &xHandle);
+    xTaskCreate(start.rotateWirtualWheel , "rotateWirWheel", 10, &taskParam, 1, &xHandle);
 }
 
 } // namespace rb3202
