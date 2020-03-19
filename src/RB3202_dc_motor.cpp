@@ -6,15 +6,17 @@
 namespace rb3202
 {
 //private:
-void DC_motor::PIDProces(void *)
+void DC_motor::PIDProces(void *self_)
 {
+    auto *self = (DC_motor*)self_;
+
     const TickType_t x_delay = COUNT_PID_PERIOD / portTICK_PERIOD_MS;
-    RB3202_encoder encoder (pid_data.enc_pin[0], pid_data.enc_pin[1]);
+    RB3202_encoder encoder (self->pid_data.enc_pin[0], self->pid_data.enc_pin[1]);
     encoder.init();
     while (true)
     {
-        pid_data.enc_position = encoder.getCount();
-        setWheelPower();
+        self->pid_data.enc_position = encoder.getCount();
+        self->setWheelPower();
         vTaskDelay(x_delay);
     }
 }
@@ -65,16 +67,18 @@ float DC_motor::count_D()
     return (pid_data.en - pid_data.I_memori[1])*pid_data.D;
 }
 
-void DC_motor::rotateWirtualWheel(void *)
+void DC_motor::rotateWirtualWheel(void *self_)
 {
+    auto *self = (DC_motor*)self_;
     const TickType_t x_delay = COUNT_PID_PERIOD / portTICK_PERIOD_MS;
     while (true)
     {
-        pid_data.virtual_wheel += ((pid_data.rotate*COUNT_PID_PERIOD)/1000)*NUMBER_OF_PULS_PER_REVOLUTION;
+        self->pid_data.virtual_wheel += ((self->pid_data.rotate*COUNT_PID_PERIOD)/1000)*NUMBER_OF_PULS_PER_REVOLUTION;
         vTaskDelay(x_delay);
     }
     
 }
+
 //protected:
 void DC_motor::adjustConstants(pid_data_t data)
 {

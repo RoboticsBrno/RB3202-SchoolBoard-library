@@ -3,6 +3,8 @@
 
 set(app_sources
 	"RB3202_DRV8833.cpp"
+	"RB3202_dc_motor.cpp"
+	"RB3202_encoder.cpp"
 	"main.cpp"
 )
 
