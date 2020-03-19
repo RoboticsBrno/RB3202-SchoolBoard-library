@@ -1,34 +1,44 @@
 #pragma once
 
+#include <stdio.h>
+
 #include <driver/adc.h>
 #include <driver/gpio.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/ledc.h"
+#include "esp_err.h"
 
-namespace RB3202
-{  
-    static const gpio_num_t BOARD_OFF = GPIO_NUM_13;
+#define RB3202_BOARD        0
 
-    static const gpio_num_t PWM_M0 = GPIO_NUM_0;
-    static const gpio_num_t PWM_M1 = GPIO_NUM_16;
-    static const gpio_num_t PWM_M2 = GPIO_NUM_17;
-    static const gpio_num_t PWM_M3 = GPIO_NUM_5;
-    static const gpio_num_t SLEEP_PIN = GPIO_NUM_2;
+#define LOW                 0
+#define HIGH                1
+#define PI                  3.1415926535897932384
 
-    static const gpio_num_t ENC_A1 = GPIO_NUM_15;
-    static const gpio_num_t ENC_B1 = GPIO_NUM_4;
-    static const gpio_num_t ENC_A2 = GPIO_NUM_19;
-    static const gpio_num_t ENC_B2 = GPIO_NUM_18;
+namespace rb3202
+{
+    static const gpio_num_t BOARD_OFF_GPIO = GPIO_NUM_13;
+    static const gpio_num_t BOARD_BATREF_GPIO = GPIO_NUM_35;
 
+    static const gpio_num_t MOTOR_PWM0_GPIO = GPIO_NUM_0;
+    static const gpio_num_t MOTOR_PWM1_GPIO = GPIO_NUM_16;
+    static const gpio_num_t MOTOR_PWM2_GPIO = GPIO_NUM_5;
+    static const gpio_num_t MOTOR_PWM3_GPIO = GPIO_NUM_17;
+    static const gpio_num_t MOTOR_SLEEP_GPIO = GPIO_NUM_2;
 
-    static const gpio_num_t SW0 = GPIO_NUM_25;
-    static const gpio_num_t SW1 = GPIO_NUM_12;
-    static const gpio_num_t SW2 = GPIO_NUM_27;
-    static const gpio_num_t SW3 = GPIO_NUM_26;
+    static const gpio_num_t ENC_A0_GPIO = GPIO_NUM_15;
+    static const gpio_num_t ENC_B0_GPIO = GPIO_NUM_4;
+    static const gpio_num_t ENC_A1_GPIO = GPIO_NUM_19;
+    static const gpio_num_t ENC_B1_GPIO = GPIO_NUM_18;
 
-    static const gpio_num_t LED_r = GPIO_NUM_21;
-    static const gpio_num_t LED_g = GPIO_NUM_22;
-    static const gpio_num_t LED_b = GPIO_NUM_23;
+    static const gpio_num_t SW_0_GPIO = GPIO_NUM_25;
+    static const gpio_num_t SW_1_GPIO = GPIO_NUM_12;
+    static const gpio_num_t SW_2_GPIO = GPIO_NUM_27;
+    static const gpio_num_t SW_3_GPIO = GPIO_NUM_26;
 
-    static const gpio_num_t SMART_SERVO = GPIO_NUM_23;
+    static const gpio_num_t LED_R_GPIO = GPIO_NUM_21;
+    static const gpio_num_t LED_G_GPIO = GPIO_NUM_32;
+    static const gpio_num_t LED_B_GPIO = GPIO_NUM_33;
 
-    static const gpio_num_t BATERI = GPIO_NUM_35;
+    static const gpio_num_t SERVO_SMART_GPIO = GPIO_NUM_23;
 };

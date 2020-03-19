@@ -9,7 +9,7 @@
 #include "esp_attr.h"
 #include "esp_log.h"
 #include "soc/gpio_sig_map.h"
-#include "esp32-hal-adc.h"
+//#include "esp32-hal-adc.h"
 #include "esp_system.h"
 #include "RB3202_encoder.hpp"
 

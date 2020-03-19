@@ -4,11 +4,11 @@
 
 #include "driver/pcnt.h"
 
-static const int16_t PCNT_H_LIM_VAL = 32767;
-static const int16_t PCNT_L_LIM_VAL = -32768;
-static const int16_t PCNT_THRESH1_VAL = 32766;
-static const int16_t PCNT_THRESH0_VAL = -32767;
-static const int16_t ESP_INTR_FLAG_DEFAULT = 0;
+static const int16_t PCNT_H_LIM_VAL         = 32767;
+static const int16_t PCNT_L_LIM_VAL         = -32768;
+static const int16_t PCNT_THRESH1_VAL       = 32766;
+static const int16_t PCNT_THRESH0_VAL       = -32767;
+static const int16_t ESP_INTR_FLAG_DEFAULT  = 0;
 
 static const uint8_t pcntPins[16] = {4, 5, 13, 14, 15, 16, 17, 18, 19, 21, 25, 26, 27, 32, 33, 35};
 
