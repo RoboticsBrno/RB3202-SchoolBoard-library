@@ -104,10 +104,10 @@ void DC_motor::sedPID(int motor)
     choicePins();
     setDriver();
     TaskHandle_t xHandle = NULL;
-    static uint8_t taskParam;
-    DC_motor start;
-    xTaskCreate(start.PIDProces , "PID", 10, &taskParam, 1, &xHandle);
-    xTaskCreate(start.rotateWirtualWheel , "rotateWirWheel", 10, &taskParam, 1, &xHandle);
+
+    //DC_motor start; ??
+    xTaskCreate(PIDProces , "PID", 4096, this, 1, &xHandle);
+    xTaskCreate(rotateWirtualWheel , "rotateWirWheel", 4096, this, 1, &xHandle);
 }
 
 } // namespace rb3202
