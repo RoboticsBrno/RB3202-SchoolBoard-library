@@ -26,11 +26,11 @@ struct pid_data_t
     float D = 1;
 };
 
-class DC_motor: DRV8833
+class DC_motor: public DRV8833
 {
 private:
-void PIDProces(void *);
-void rotateWirtualWheel(void *);
+static void PIDProces(void *this_);
+static void rotateWirtualWheel(void *this_);
 
 void choicePins();
 void setWheelPower();
