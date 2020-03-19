@@ -44,12 +44,13 @@ float DC_motor::count_P()
 {
     return pid_data.en * pid_data.P;
 }
+
 float DC_motor::count_I()
 {
     float I_membr = 0;
     for(int a = 1000/COUNT_PID_PERIOD; a > 0;a--)
     {
-        pid_data.I_memori[a] += pid_data.I_memori[a--];
+        //pid_data.I_memori[a] += pid_data.I_memori[a--];
     }
     pid_data.I_memori[0] = pid_data.en;
     for(int a = 0; a < 1000/COUNT_PID_PERIOD;a++)
@@ -58,6 +59,7 @@ float DC_motor::count_I()
     }
     return I_membr * pid_data.I;
 }
+
 float DC_motor::count_D()
 {
     return (pid_data.en - pid_data.I_memori[1])*pid_data.D;
@@ -101,7 +103,8 @@ void DC_motor::sedPID(int motor)
     TaskHandle_t xHandle = NULL;
     static uint8_t taskParam;
     DC_motor start;
-    xTaskCreate( start.PIDProces , "PID", 10, &taskParam, 1, &xHandle);
-    xTaskCreate( start.rotateWirtualWheel , "rotateWirWheel", 10, &taskParam, 1, &xHandle);
+    //xTaskCreate( start.PIDProces , "PID", 10, &taskParam, 1, &xHandle);
+    //xTaskCreate( start.rotateWirtualWheel , "rotateWirWheel", 10, &taskParam, 1, &xHandle);
 }
+
 } // namespace rb3202
