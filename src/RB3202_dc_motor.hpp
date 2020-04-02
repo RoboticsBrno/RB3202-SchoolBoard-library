@@ -5,8 +5,8 @@
 #include "RB3202_encoder.hpp"
 
 
-#define COUNT_PID_PERIOD                10  // controlled power update period
-#define NUMBER_OF_PULS_PER_REVOLUTION   100
+#define COUNT_PID_PERIOD                100  // controlled power update period
+#define NUMBER_OF_PULS_PER_REVOLUTION   1000
 
 namespace rb3202
 {
@@ -21,8 +21,13 @@ struct pid_data_t
     float virtual_wheel = 0;
     float en = 0;
     float I_memori[1000/COUNT_PID_PERIOD];
-    float P = 1;
-    float I = 1;
+    
+};
+
+struct pid_constant_t
+{
+    const float P = 0.001;
+    float I = 0;
     float D = 1;
 };
 
@@ -36,16 +41,20 @@ void choicePins();
 void setWheelPower();
 
 
-float count_P();
-float count_I();
-float count_D();
+const float count_P();
+const float count_I();
+const float count_D();
+float cropExtremeValues(float x, int extrem = 256);
 
 protected:
 pid_data_t pid_data;
-void adjustConstants(pid_data_t data);
+pid_constant_t pid_const;
+void adjustConstants(pid_constant_t data);
 pid_data_t getPidData();
 
 public:
+DC_motor();
+
 void sedPID(int motor);
 void sedRotate(float rotate);
 

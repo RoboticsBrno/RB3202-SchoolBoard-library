@@ -26,10 +26,10 @@ namespace rb3202
     static const gpio_num_t MOTOR_PWM3_GPIO = GPIO_NUM_17;
     static const gpio_num_t MOTOR_SLEEP_GPIO = GPIO_NUM_2;
 
-    static const gpio_num_t ENC_A0_GPIO = GPIO_NUM_15;
-    static const gpio_num_t ENC_B0_GPIO = GPIO_NUM_4;
-    static const gpio_num_t ENC_A1_GPIO = GPIO_NUM_19;
-    static const gpio_num_t ENC_B1_GPIO = GPIO_NUM_18;
+    static const gpio_num_t ENC_A0_GPIO = GPIO_NUM_4;
+    static const gpio_num_t ENC_B0_GPIO = GPIO_NUM_15;
+    static const gpio_num_t ENC_A1_GPIO = GPIO_NUM_18;
+    static const gpio_num_t ENC_B1_GPIO = GPIO_NUM_19;
 
     static const gpio_num_t SW_0_GPIO = GPIO_NUM_25;
     static const gpio_num_t SW_1_GPIO = GPIO_NUM_12;

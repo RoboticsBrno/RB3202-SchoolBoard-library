@@ -54,7 +54,7 @@ void DRV8833::setMotorPwmPins(gpio_num_t pin, uint8_t channel)
 
 void DRV8833::setMotorSleepPin(gpio_num_t pin)
 {
-    gpio_set_direction(MOTOR_SLEEP_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_direction(pin, GPIO_MODE_OUTPUT);
     gpio_set_level(pin, true);
 }
 
@@ -62,7 +62,6 @@ void DRV8833::internalSetChannelPower(bool channel, int power)
 {
     if(!channel)
     {
-        
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, ledc_channel_t(0), setPwmPercent(power,0));
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, ledc_channel_t(1), setPwmPercent(power,1));
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, ledc_channel_t(0));

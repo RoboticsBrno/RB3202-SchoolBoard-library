@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "RB3202_dc_motor.hpp"
 #include "RB3202_pinout.hpp"
 #include "RB3202_DRV8833.hpp"
@@ -16,6 +18,7 @@ void DC_motor::PIDProces(void *self_)
     while (true)
     {
         self->pid_data.enc_position = encoder.getCount();
+        self->pid_data.virtual_wheel += ((self->pid_data.rotate*COUNT_PID_PERIOD)/1000)*NUMBER_OF_PULS_PER_REVOLUTION;
         self->setWheelPower();
         vTaskDelay(x_delay);
     }
@@ -38,16 +41,20 @@ void DC_motor::choicePins()
 void DC_motor::setWheelPower()
 {
     pid_data.en = pid_data.enc_position - pid_data.virtual_wheel;
-    pid_data.power += count_P()+count_I()+count_D();
+    pid_data.power = cropExtremeValues(pid_data.power+count_P()+count_D());
     internalSetChannelPower(pid_data.motor, pid_data.power);
+    printf("enc: %d power: %d virtual_wheel: %4.4f en: %4.4f P: %4.4f I: %4.4f D: %4.4f", 
+            pid_data.enc_position, pid_data.power, pid_data.virtual_wheel, 
+            pid_data.en, count_P(), count_I(), count_D());
+    printf(" c-P %4.4f cI: %4.4f cD: %4.4f \n",pid_const.P, pid_const.I, pid_const.D);
 }
 
-float DC_motor::count_P()
+const float DC_motor::count_P()
 {
-    return pid_data.en * pid_data.P;
+    return pid_data.en * 0.1f;
 }
 
-float DC_motor::count_I()
+const float DC_motor::count_I()
 {
     float I_membr = 0;
     for(int a = 1000/COUNT_PID_PERIOD; a > 0;a--)
@@ -59,33 +66,35 @@ float DC_motor::count_I()
     {
         I_membr += pid_data.I_memori[a];
     }
-    return I_membr * pid_data.I;
+    return I_membr * pid_const.I;
 }
 
-float DC_motor::count_D()
+const float DC_motor::count_D()
 {
-    return (pid_data.en - pid_data.I_memori[1])*pid_data.D;
+    return (pid_data.en - pid_data.I_memori[1])*pid_const.D;
 }
 
-void DC_motor::rotateWirtualWheel(void *self_)
+float DC_motor::cropExtremeValues(float x, int extrem)
 {
-    auto *self = (DC_motor*)self_;
-    const TickType_t x_delay = COUNT_PID_PERIOD / portTICK_PERIOD_MS;
-    while (true)
+    if((x<extrem)&&(x>(extrem*(-1))))
+        return x;
+    else if(x<0)
     {
-        self->pid_data.virtual_wheel += ((self->pid_data.rotate*COUNT_PID_PERIOD)/1000)*NUMBER_OF_PULS_PER_REVOLUTION;
-        vTaskDelay(x_delay);
+        return (extrem*(-1));
     }
-    
+    else
+    {
+        return extrem;
+    }
 }
 
 //protected:
-void DC_motor::adjustConstants(pid_data_t data)
-{
-    pid_data.P = data.P;
-    pid_data.I = data.I;
-    pid_data.D = data.D;
-}
+// void DC_motor::adjustConstants(pid_constant_t data)
+// {
+//     pid_const.P = data.P;
+//     pid_const.I = data.I;
+//     pid_const.D = data.D;
+// }
 
 pid_data_t DC_motor::getPidData()
 {
@@ -93,6 +102,13 @@ pid_data_t DC_motor::getPidData()
 }
 
 //public:
+DC_motor::DC_motor()
+{
+    //pid_const.P = 0.01;
+    pid_const.I = 0;
+    pid_const.D = 0.1;
+}
+
 void DC_motor::sedRotate(float rotate)
 {
     pid_data.rotate = rotate;
@@ -105,9 +121,7 @@ void DC_motor::sedPID(int motor)
     setDriver();
     TaskHandle_t xHandle = NULL;
 
-    //DC_motor start; ??
-    xTaskCreate(PIDProces , "PID", 4096, this, 1, &xHandle);
-    xTaskCreate(rotateWirtualWheel , "rotateWirWheel", 4096, this, 1, &xHandle);
+    xTaskCreate(PIDProces , "PID", 4096, this, 2, &xHandle);
 }
 
 } // namespace rb3202
