@@ -5,5 +5,7 @@ extern "C" void app_main()
   motorA.sedPID(1);
   motorA.sedRotate(1.0);
 
-  vTaskDelay(100000);
+  while(true) {
+    vTaskDelay(100000);
+  }
 }

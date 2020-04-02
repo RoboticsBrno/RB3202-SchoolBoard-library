@@ -57,7 +57,7 @@ const float DC_motor::count_P()
 const float DC_motor::count_I()
 {
     float I_membr = 0;
-    for(int a = 1000/COUNT_PID_PERIOD; a > 0;a--)
+    for(int a = 1000/COUNT_PID_PERIOD - 1; a > 0;a--)
     {
         pid_data.I_memori[a] += pid_data.I_memori[a-1];
     }
