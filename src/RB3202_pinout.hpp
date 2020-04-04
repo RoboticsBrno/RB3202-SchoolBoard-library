@@ -41,4 +41,17 @@ namespace rb3202
     static const gpio_num_t LED_B_GPIO = GPIO_NUM_33;
 
     static const gpio_num_t SERVO_SMART_GPIO = GPIO_NUM_23;
+
+
+    struct driver_pins_t
+    {
+        gpio_num_t pwm_pin[4] = {
+            MOTOR_PWM0_GPIO,
+            MOTOR_PWM1_GPIO,
+            MOTOR_PWM2_GPIO,
+            MOTOR_PWM3_GPIO,
+        };
+
+        gpio_num_t sleep_pin = rb3202::MOTOR_SLEEP_GPIO;
+    };
 };

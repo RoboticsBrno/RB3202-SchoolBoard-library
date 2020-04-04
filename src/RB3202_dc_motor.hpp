@@ -17,7 +17,7 @@ struct pid_data_t
     int motor = 0;
     float rotate = 0;
     int enc_position = 0;
-    int power = 0;
+    float power = 0;
     float virtual_wheel = 0;
     float en = 0;
     float I_memori[1000/COUNT_PID_PERIOD];
@@ -26,9 +26,9 @@ struct pid_data_t
 
 struct pid_constant_t
 {
-    const float P = 0.001;
+    float P = 0.001;
     float I = 0;
-    float D = 1;
+    float D = 0.001;
 };
 
 class DC_motor: public DRV8833
@@ -40,10 +40,9 @@ static void rotateWirtualWheel(void *this_);
 void choicePins();
 void setWheelPower();
 
-
-const float count_P();
-const float count_I();
-const float count_D();
+float count_P();
+float count_I();
+float count_D();
 float cropExtremeValues(float x, int extrem = 256);
 
 protected:

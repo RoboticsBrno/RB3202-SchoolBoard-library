@@ -42,22 +42,22 @@ void DC_motor::setWheelPower()
 {
     pid_data.en = pid_data.enc_position - pid_data.virtual_wheel;
     pid_data.power = cropExtremeValues(pid_data.power+count_P()+count_D());
-    internalSetChannelPower(pid_data.motor, pid_data.power);
-    printf("enc: %d power: %d virtual_wheel: %4.4f en: %4.4f P: %4.4f I: %4.4f D: %4.4f", 
+    internalSetChannelPower(pid_data.motor, int(pid_data.power));
+    printf("enc: %d power: %4.1f virtual_wheel: %4.4f en: %4.4f P: %4.4f I: %4.4f D: %4.4f", 
             pid_data.enc_position, pid_data.power, pid_data.virtual_wheel, 
             pid_data.en, count_P(), count_I(), count_D());
     printf(" c-P %4.4f cI: %4.4f cD: %4.4f \n",pid_const.P, pid_const.I, pid_const.D);
 }
 
-const float DC_motor::count_P()
+float DC_motor::count_P()
 {
-    return pid_data.en * 0.1f;
+    return pid_data.en * 0.001f;
 }
 
-const float DC_motor::count_I()
+float DC_motor::count_I()
 {
     float I_membr = 0;
-    for(int a = 1000/COUNT_PID_PERIOD; a > 0;a--)
+    for(int a = 1000/COUNT_PID_PERIOD-1; a > 0;a--)
     {
         pid_data.I_memori[a] += pid_data.I_memori[a-1];
     }
@@ -69,7 +69,7 @@ const float DC_motor::count_I()
     return I_membr * pid_const.I;
 }
 
-const float DC_motor::count_D()
+float DC_motor::count_D()
 {
     return (pid_data.en - pid_data.I_memori[1])*pid_const.D;
 }
@@ -89,12 +89,12 @@ float DC_motor::cropExtremeValues(float x, int extrem)
 }
 
 //protected:
-// void DC_motor::adjustConstants(pid_constant_t data)
-// {
-//     pid_const.P = data.P;
-//     pid_const.I = data.I;
-//     pid_const.D = data.D;
-// }
+void DC_motor::adjustConstants(pid_constant_t data)
+{
+    pid_const.P = data.P;
+    pid_const.I = data.I;
+    pid_const.D = data.D;
+}
 
 pid_data_t DC_motor::getPidData()
 {
@@ -106,7 +106,7 @@ DC_motor::DC_motor()
 {
     //pid_const.P = 0.01;
     pid_const.I = 0;
-    pid_const.D = 0.1;
+    pid_const.D = 0.00001;
 }
 
 void DC_motor::sedRotate(float rotate)
