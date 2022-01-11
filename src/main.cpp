@@ -1,22 +1,28 @@
 #include "RB3202_lbr.hpp"
 #include "RB3202_servo_analog.hpp"
+#include "RB3202_servo_smart.hpp"
 
+
+using namespace rb3202;
 
 static rb3202::stepper_motor m;
 
-static void pouzijServo(rb3202::ServoAnalog& s) {
-  s.set(45);
-
-
-}
 
 extern "C" void app_main()
 {
-  rb3202::ServoAnalog servo(GPIO_NUM_10, LEDC_TIMER_0, LEDC_CHANNEL_0);
+ // m.setAllPins();
+  //m.doStep(1000,-50);
 
-  pouzijServo(servo);
 
-  m.setAllPins();
-  m.doStep(1000,-50);
-  vTaskDelay(1000);
+  ServoSmartBus bus;
+  bus.install(1, UART_NUM_1, GPIO_NUM_11);
+
+  auto angle = bus.getAngle(1);
+  printf("Servo angle: %f\n", angle.deg());
+
+  //bus.setAngle(1, 120_deg);
+
+  while(true) {
+    vTaskDelay(1000);
+  }
 }
