@@ -1,6 +1,4 @@
 #include "RB3202_lbr.hpp"
-#include "RB3202_servo_analog.hpp"
-#include "RB3202_servo_smart.hpp"
 
 
 using namespace rb3202;
@@ -10,9 +8,6 @@ static rb3202::stepper_motor m;
 
 extern "C" void app_main()
 {
- // m.setAllPins();
-  //m.doStep(1000,-50);
-
 
   ServoSmartBus bus;
   bus.install(1, UART_NUM_1, GPIO_NUM_11);
