@@ -83,16 +83,16 @@ int DRV8833::setPwmPercent(float percent, int channel)
     if(percent < 0)
     {
         if((channel==1)||(channel==3))
-        return MAX_PWM;
+            return MAX_PWM;
         else
-        return MAX_PWM - percent;
+            return MAX_PWM - percent;
     }
     else
     {
         if((channel==1)||(channel==3))
-        return MAX_PWM - percent;
+            return MAX_PWM - percent;
         else
-        return MAX_PWM;
+            return MAX_PWM;
     }
 }
 
