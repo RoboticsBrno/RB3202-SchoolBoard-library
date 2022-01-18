@@ -27,10 +27,29 @@ esp_err_t ServoSmartBus::install(uint8_t servo_count, uart_port_t uart, gpio_num
 
     xTaskCreate(ServoSmartBus::uartRoutine,"rb3202_servo_tx", 4096, this, 1, NULL);
 
+    {
+        std::lock_guard<std::mutex> lo(m_mutex);
+        m_servos.resize(servo_count);
+
+        for(uint8_t i = 0; i < servo_count; ++i) {
+            auto pos = getAngle(i);
+
+            if(pos.isNaN()) {
+                uint16_t posInt = pos.deg() * 100;
+                m_servos[i].current = posInt;
+                m_servos[i].target = posInt;
+            } else {
+                ESP_LOGE("smartservo", "failed to get servo %d position", i);
+            }
+        }
+    }
+
+    xTaskCreate(ServoSmartBus::regulatorRoutine,"rb3202_servo_reg", 4096, this, 2, NULL);
+
     return ESP_OK;
 }
 
-void ServoSmartBus::send(uint8_t *data, size_t size) {
+void ServoSmartBus::send(const uint8_t *data, size_t size) {
     struct tx_item it = { };
     if(size > sizeof(it.data)) {
         ESP_LOGE("smartservo", "send size too big: %d > %d", size, sizeof(it.data));
@@ -67,12 +86,28 @@ ServoSmartBus::rx_response ServoSmartBus::sendWithResponseBlocking(uint8_t *data
     return resp;
 }
 
-void ServoSmartBus::setAngle(uint8_t id, Angle angle) {
-    auto pkt = lw::Servo::move(id, angle);
-    send(pkt._data.data(), pkt._data.size());
+void ServoSmartBus::setAngle(uint8_t id, Angle angle, float speedDegPerSecond, float speedRaise) {
+    float speedPerMs = std::max(1.f, std::min(240.f, speedDegPerSecond)) / 10.f;
+    const uint16_t angleInt = std::max(0.f, std::min(360.f, (float)angle.deg())) * 100;
+
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    auto& s = m_servos[id];
+
+    if(s.current == angleInt) {
+        return;
+    }
+
+    if((s.current > s.target) != (s.current > angleInt)) {
+        s.speed_coef = 0.f;
+    }
+
+    s.target = angleInt;
+    s.speed_raise = speedRaise;
+    s.speed_target = speedPerMs;
 }
 
-Angle ServoSmartBus::getAngle(uint8_t id) {
+Angle ServoSmartBus::getAngleOnline(uint8_t id) {
     lw::Packet pkt(id, lw::Command::SERVO_POS_READ);
 
     auto resp = sendWithResponseBlocking(pkt._data.data(), pkt._data.size());
@@ -91,6 +126,77 @@ Angle ServoSmartBus::getAngle(uint8_t id) {
     }
 
     return Angle::deg((float(val) / 1000.f) * 240.f);
+}
+
+Angle ServoSmartBus::getAngle(uint8_t id) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return Angle::deg(float(m_servos[id].current) * 100);
+}
+
+void ServoSmartBus::regulatorRoutine(void *selfVoid) {
+    ServoSmartBus *self = (ServoSmartBus*)selfVoid;
+
+    const auto servosCount = self->m_servos.size();
+
+    const auto ticksPerServo = MS_TO_TICKS(REGULATOR_TIME_SLICE_MS);
+    const auto ticksPerIter = ticksPerServo * servosCount;
+
+    while(true) {
+        const auto tmIterStart = xTaskGetTickCount();
+
+        for(size_t i = 0; i < servosCount; ++i) {
+            const auto tmServoStart = xTaskGetTickCount();
+            self->regulateServo(i);
+            const auto diff = xTaskGetTickCount() - tmServoStart;
+            if (diff < ticksPerServo) {
+                vTaskDelay(ticksPerServo - diff);
+            }
+        }
+
+        const auto diff = xTaskGetTickCount() - tmIterStart;
+        if (diff < ticksPerIter) {
+            vTaskDelay(ticksPerIter - diff);
+        }
+    }
+}
+
+void ServoSmartBus::regulateServo(uint8_t id) {
+    auto& s = m_servos[id];
+
+    float moveDeg;
+
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        if(s.current == s.target) {
+            return;
+        }
+
+        float speed = s.speed_target;
+        if(s.speed_coef < 1.f) {
+            s.speed_coef = std::min(1.f, s.speed_coef + s.speed_raise * REGULATOR_TIME_SLICE_MS);
+            speed = speed * (s.speed_coef * s.speed_coef);
+        }
+
+        int32_t dist = abs(int32_t(s.target) - int32_t(s.current));
+        dist = std::max(1, std::min(dist, int32_t(speed * REGULATOR_TIME_SLICE_MS)));
+
+        if(s.target < s.current) {
+            s.current -= dist;
+        } else {
+            s.current += dist;
+        }
+
+        if(s.current == s.target) {
+            s.speed_coef = 0.f;
+        }
+
+        moveDeg = float(s.current) / 100.f;
+    }
+
+    const auto pkt = lw::Servo::move(id, Angle::deg(moveDeg),
+        std::chrono::milliseconds(REGULATOR_TIME_SLICE_MS - 5));
+    send(pkt._data.data(), pkt._data.size());
 }
 
 void ServoSmartBus::uartRoutine(void *selfVoid) {
