@@ -23,29 +23,43 @@ ServoSmartBus::~ServoSmartBus() {
 esp_err_t ServoSmartBus::install(uint8_t servo_count, uart_port_t uart, gpio_num_t pin) {
     m_uart = uart;
     m_uart_pin = pin;
+    ESP_LOGE("debug-smart-swo", "install in");
     m_tx_queue = xQueueCreate(8, sizeof(struct tx_item));
+    ESP_LOGE("debug-smart-swo", "qCreated");
 
     xTaskCreate(ServoSmartBus::uartRoutine,"rb3202_servo_tx", 4096, this, 1, NULL);
-
+    
+    ESP_LOGE("debug-smart-swo", "xTaskCreate");
+    
     {
         std::lock_guard<std::mutex> lo(m_mutex);
+        ESP_LOGE("debug-smart-swo", "mutex");
         m_servos.resize(servo_count);
+        ESP_LOGE("debug-smart-swo", "resized");
 
         for(uint8_t i = 0; i < servo_count; ++i) {
+            ESP_LOGE("debug-smart-swo", "getPos-before");
             auto pos = getAngle(i);
+            ESP_LOGE("debug-smart-swo", "getPos-after");
 
             if(pos.isNaN()) {
                 uint16_t posInt = pos.deg() * 100;
                 m_servos[i].current = posInt;
                 m_servos[i].target = posInt;
+                ESP_LOGE("debug-smart-swo", "isNaN");
             } else {
                 ESP_LOGE("smartservo", "failed to get servo %d position", i);
             }
+
+            ESP_LOGE("debug-smart-swo", "init-servo-for");
         }
     }
 
+    ESP_LOGE("debug-smart-swo", "position set");
+
     xTaskCreate(ServoSmartBus::regulatorRoutine,"rb3202_servo_reg", 4096, this, 2, NULL);
 
+    ESP_LOGE("debug-smart-swo", "xTaskCreate");
     return ESP_OK;
 }
 
@@ -129,11 +143,15 @@ Angle ServoSmartBus::getAngleOnline(uint8_t id) {
 }
 
 Angle ServoSmartBus::getAngle(uint8_t id) {
+    ESP_LOGE("debug-smart-swo", "getAngle-bef");
     std::lock_guard<std::mutex> lock(m_mutex);
+    ESP_LOGE("debug-smart-swo", "getAngle-aft");
     return Angle::deg(float(m_servos[id].current) * 100);
 }
 
 void ServoSmartBus::regulatorRoutine(void *selfVoid) {
+    ESP_LOGE("debug-smart-swo", "regulatorRoutine");
+
     ServoSmartBus *self = (ServoSmartBus*)selfVoid;
 
     const auto servosCount = self->m_servos.size();
@@ -200,6 +218,7 @@ void ServoSmartBus::regulateServo(uint8_t id) {
 }
 
 void ServoSmartBus::uartRoutine(void *selfVoid) {
+    ESP_LOGE("debug-smart-swo", "uart-init");
     ServoSmartBus *self = (ServoSmartBus*)selfVoid;
 
     const uart_config_t uart_config = {
@@ -220,20 +239,30 @@ void ServoSmartBus::uartRoutine(void *selfVoid) {
     auto tm_last = xTaskGetTickCount();
     constexpr auto min_delay = MS_TO_TICKS(15);
     while(true) {
+        ESP_LOGE("debug-smart-swo", "uart-message");
         if(xQueueReceive(self->m_tx_queue, &item, portMAX_DELAY) != pdTRUE) {
+            ESP_LOGE("debug-smart-swo", "continue...");
             continue;
         }
 
+        ESP_LOGE("debug-smart-swo", "uart-msg-recieve");
+
         const auto diff = xTaskGetTickCount() - tm_last;
+        ESP_LOGE("debug-smart-swo", "firstDel");
         if (diff < min_delay) {
             vTaskDelay(min_delay - diff);
         }
+        ESP_LOGE("debug-smart-swo", "secondDel");
 
         half_duplex::uart_tx_chars(self->m_uart, (char*)item.data, item.size);
         tm_last = xTaskGetTickCount();
 
+        ESP_LOGE("debug-smart-swo", "threeDel");
+
         // discard copy of the transmitted data
         self->receive(resp.data, sizeof(resp.data));
+
+        ESP_LOGE("debug-smart-swo", "uart-rec");
 
         if(item.expect_response) {
             resp.size = self->receive(resp.data, sizeof(resp.data));
