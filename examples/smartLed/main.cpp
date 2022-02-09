@@ -3,9 +3,6 @@
 
 using namespace rb3202;
 
-static rb3202::stepper_motor m;
-
-
 static void smartLedsTest(int r, int g) {
   SmartLed ledBus(LED_WS2812B, 8, GPIO_NUM_14, 0, DoubleBuffer);
   ledBus[0] = Rgb(r, g, 0);

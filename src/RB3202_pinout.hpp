@@ -36,12 +36,11 @@ namespace rb3202
     static const gpio_num_t SW_2_GPIO = GPIO_NUM_27;
     static const gpio_num_t SW_3_GPIO = GPIO_NUM_26;
 
-    static const gpio_num_t LED_R_GPIO = GPIO_NUM_21;
-    static const gpio_num_t LED_G_GPIO = GPIO_NUM_32;
-    static const gpio_num_t LED_B_GPIO = GPIO_NUM_33;
+    static const gpio_num_t LED_R_GPIO = GPIO_NUM_21;  // in this order; Red is the nearest of the border
+    static const gpio_num_t LED_G_GPIO = GPIO_NUM_22;
+    static const gpio_num_t LED_B_GPIO = GPIO_NUM_23;
 
-    static const gpio_num_t SERVO_SMART_GPIO = GPIO_NUM_23;
-
+    static const gpio_num_t SERVO_SMART_GPIO = GPIO_NUM_35; // on the board is wrong description; GPIO is on the connector for smartservo pin the nearest of the border
 
     struct driver_pins_t
     {

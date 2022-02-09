@@ -6,8 +6,6 @@
 
 using namespace rb3202;
 
-static rb3202::stepper_motor m;
-
 extern "C" void app_main()
 {
   ServoSmartBus bus;

@@ -5,9 +5,6 @@
 
 using namespace rb3202;
 
-static rb3202::stepper_motor m;
-
-
 extern "C" void app_main()
 {
   ServoAnalog servo14(GPIO_NUM_12, LEDC_TIMER_0, LEDC_CHANNEL_0, 90);
