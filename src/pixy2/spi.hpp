@@ -15,7 +15,7 @@ public:
 
     // host has to be already initialized by spi_bus_initialize
     static std::tuple<LinkSpi, esp_err_t> addSpiDevice(spi_host_device_t host, int frequency_hz = 6000000) {
-        spi_device_interface_config_t devCfg = { 0 };
+        spi_device_interface_config_t devCfg = { };
         devCfg.mode = 3;
         devCfg.clock_speed_hz = frequency_hz;
         devCfg.spics_io_num = -1;
@@ -33,6 +33,7 @@ public:
         this->m_spiDev = other.m_spiDev;
         other.m_spiDev = nullptr;
     };
+
     ~LinkSpi() {
         if(m_spiDev != nullptr) {
             spi_bus_remove_device(m_spiDev);

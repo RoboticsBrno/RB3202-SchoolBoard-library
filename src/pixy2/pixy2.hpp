@@ -6,11 +6,27 @@
 #include <tuple>
 
 #include "packet.hpp"
+#include "pixy_span.hpp"
 
 namespace pixy2 {
 
+
+
 struct GetBlocksContext {
-    std::vector<ColorBlock> blocks;
+    // Blocks are valid while this GetBlocksContext lives and until next getColorBlocks call,
+    // otherwise you need to make a copy.
+    PixySpan<ColorBlock> blocks;
+
+    PacketResponse resp;
+};
+
+struct LineFeaturesContext {
+    // Vectors, Intersections and bar codes are valid while this LineFeaturesContext lives and until next getColorBlocks call,
+    // otherwise you need to make a copy.
+    PixySpan<LineVector> vectors;
+    PixySpan<LineIntersection> intersections;
+    PixySpan<LineBarCode> barcodes;
+
     PacketResponse resp;
 };
 
@@ -30,7 +46,10 @@ public:
 
     esp_err_t waitForStartup(VersionResponse *captureVersion = nullptr, TickType_t timeout = pdMS_TO_TICKS(5000)) const;
     esp_err_t getVersion(VersionResponse& dest) const;
-    esp_err_t getBlocks(uint8_t signaturesMask, uint8_t maxBlocks, GetBlocksContext& ctx) const;
+
+    esp_err_t getColorBlocks(uint8_t signaturesMask, uint8_t maxBlocks, GetBlocksContext& ctx) const;
+
+    esp_err_t getLineFeatures(LineFeaturesContext& ctx, LineFeatures features = LineFeatures::ALL, bool allFeatures = false) const;
 
     template<typename T, size_t N>
     static PacketRequest<N> request(PacketType type, T const (&bytes)[N]) {
@@ -51,8 +70,10 @@ private:
 
     esp_err_t transact(const uint8_t *reqData, size_t reqLen, PacketResponse& response) const;
 
-    esp_err_t waitForSyncLocked(PacketResponse& resp, uint16_t attempts = 32) const;
+    esp_err_t waitForSyncLocked(PacketResponse& resp, uint16_t attempts = 64) const;
     esp_err_t receivePacketLocked(PacketResponse& resp) const;
+
+    esp_err_t getLineFeatures();
 
     mutable std::mutex m_linkMutex;
     LinkType m_link;
@@ -161,10 +182,12 @@ esp_err_t Pixy2<LinkType>::getVersion(VersionResponse& dest) const {
 }
 
 template<typename LinkType>
-esp_err_t Pixy2<LinkType>::getBlocks(uint8_t signaturesMask, uint8_t maxBlocks, GetBlocksContext& ctx) const {
+esp_err_t Pixy2<LinkType>::getColorBlocks(uint8_t signaturesMask, uint8_t maxBlocks, GetBlocksContext& ctx) const {
     const auto blocksReq = Pixy2::request(PacketType::GET_BLOCKS, { signaturesMask, maxBlocks });
 
     auto& r = ctx.resp;
+
+    ctx.blocks.reset();
 
     auto err = transact(blocksReq, r);
     if(err != ESP_OK) {
@@ -177,12 +200,56 @@ esp_err_t Pixy2<LinkType>::getBlocks(uint8_t signaturesMask, uint8_t maxBlocks, 
         return ESP_ERR_INVALID_RESPONSE;
     }
 
-    ctx.blocks.resize(r.dataLen() / sizeof(ColorBlock));
-    size_t off = 0;
-    for(auto& b : ctx.blocks) {
-        b = r.get<ColorBlock>(off);
-        off += sizeof(ColorBlock);
+
+    ctx.blocks.reset((ColorBlock*)r.data(), r.dataLen() / sizeof(ColorBlock));
+    return ESP_OK;
+}
+
+template<typename LinkType>
+esp_err_t Pixy2<LinkType>::getLineFeatures(LineFeaturesContext& ctx, LineFeatures features, bool allFeatures) const {
+
+    const auto lineReq = Pixy2::request(PacketType::GET_LINE_FEATURES, {
+        uint8_t(allFeatures),
+        uint8_t(features)
+    });
+
+    ctx.vectors.reset();
+    ctx.intersections.reset();
+    ctx.barcodes.reset();
+
+    auto& r = ctx.resp;
+    auto err = transact(lineReq, r);
+    if(err != ESP_OK) {
+        return err;
     }
+
+    if(r.type() == PacketType::ERROR) {
+        return ERR_PIXY_BUSY;
+    } else if(r.type() != PacketType::GET_LINE_FEATURES_RESPONSE) {
+        return ESP_ERR_INVALID_RESPONSE;
+    }
+
+    for(size_t off = 0; off < r.dataLen(); ) {
+        const auto ftype = r.get<uint8_t>(off);
+        const auto fsize = r.get<uint8_t>(off+1);
+        
+        const uint8_t *fdata = r.data() + off + 2;
+
+        switch(ftype) {
+        case LineFeatures::VECTORS:
+            ctx.vectors.reset((LineVector*)fdata, fsize / sizeof(LineVector));
+            break;
+        case LineFeatures::INTERSECTIONS:
+            ctx.intersections.reset((LineIntersection*)fdata, fsize / sizeof(LineIntersection));
+            break;
+        case LineFeatures::BARCODES:
+            ctx.barcodes.reset((LineBarCode*)fdata, fsize / sizeof(LineBarCode));
+            break;
+        }
+
+        off += fsize + 2;
+    }
+
     return ESP_OK;
 }
 

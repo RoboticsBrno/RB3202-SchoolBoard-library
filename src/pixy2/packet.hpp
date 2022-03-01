@@ -20,6 +20,9 @@ enum PacketType : uint8_t {
     GET_VERSION_RESPONSE = 0x0F,
     GET_BLOCKS = 0x20,
     GET_BLOCKS_RESPONSE = 0x21,
+
+    GET_LINE_FEATURES = 0x30,
+    GET_LINE_FEATURES_RESPONSE = 0x31,
 };
 
 template<size_t N>
@@ -72,6 +75,11 @@ public:
         return PacketType(m_raw[2]);
     }
 
+    // without header
+    const uint8_t *data() const {
+        return m_raw.data() + headerSize();
+    }
+
     template<typename T>
     T get(uint8_t idx) {
         size_t end = headerSize() + idx + sizeof(T);
@@ -80,18 +88,6 @@ public:
             return T();
         }
         return *((T*)(m_raw.data() + headerSize() + idx));
-    }
-
-    uint32_t get(uint8_t idx) {
-        size_t end = headerSize() + idx + sizeof(uint32_t);
-        if(end > m_raw.size()) {
-            ESP_LOGE("pixy2", "attempted to read until %d, but only have %d bytes.", end, m_raw.size());
-            return uint32_t(0);
-        }
-
-        uint8_t *buffer = (m_raw.data() + headerSize() + idx);
-
-        return *( (uint32_t*) buffer );
     }
 
 private:
@@ -131,6 +127,49 @@ struct VersionResponse {
     uint8_t fw_version_minor;
     uint16_t fw_build_number;
     char fw_type[10];
+} __attribute__((packed));
+
+
+enum LineFeatures : uint8_t {
+    VECTORS = 0x01,
+    INTERSECTIONS = 0x02,
+    BARCODES = 0x04,
+
+    ALL = (VECTORS | INTERSECTIONS | BARCODES),
+};
+
+enum LineFlags : uint8_t {
+    INVALID = 0x02,
+    INTERSECTION_PRESENT = 0x04,
+};
+
+struct LineVector {
+    uint8_t x0, y0;
+    uint8_t x1, y1;
+    uint8_t index;
+    LineFlags flags;
+} __attribute__((packed));
+
+struct LineIntersectionSegment {
+    uint8_t index;
+    uint8_t _reserved;
+    int16_t angle;
+} __attribute__((packed));
+
+struct LineIntersection
+{
+    uint8_t x, y;
+
+    uint8_t segment_count;
+    uint8_t _reserved;
+
+    LineIntersectionSegment segments[6];
+} __attribute__((packed));
+
+struct LineBarCode {
+    uint8_t x, y;
+    LineFlags flags;
+    uint8_t code;
 } __attribute__((packed));
 
 };
